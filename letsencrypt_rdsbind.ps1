@@ -10,40 +10,40 @@ function DumbDebugToConsole($msg) { Write-Output "DBG :: $msg" } # totally neces
 	
 	function DumbDebugToConsole($msg) { Write-Output "DBG :: $msg" }
 
-    Import-Module RemoteDesktop
+	Import-Module RemoteDesktop
 	
-    ## Init
+	## Init
 	
 	# I tried using the variable they pass a param when starting, was giving issues.. so i'm rolling my own.
 	$pfx_dir = "C:\ProgramData\ACMESharp\sysVault\99-ASSET"
-    $this_pfxpath = (Get-ChildItem $pfx_dir | Sort-Object CreationTime -Descending | Select -Index 0).FullName
-    $this_thumbprint = (Get-PfxCertificate $this_pfxpath).Thumbprint
+	$this_pfxpath = (Get-ChildItem $pfx_dir | Sort-Object CreationTime -Descending | Select -Index 0).FullName
+	$this_thumbprint = (Get-PfxCertificate $this_pfxpath).Thumbprint
 	DumbDebugToConsole "CertPath: $this_pfxpath"
 	DumbDebugToConsole "Thumbprint: $this_thumbprint"
 	
-    ## Main
+	## Main
 
-    # Apply to RDS Roles
+	# Apply to RDS Roles
 	[int]$successCount = 0
-    Get-RDCertificate | ForEach-Object { 
-        $role = "$($_.Role)"
-        Write-Output "Procesing role: $role"
+	Get-RDCertificate | ForEach-Object { 
+		$role = "$($_.Role)"
+		Write-Output "Procesing role: $role"
 
-        # dont reapply
-        if ($_.thumbprint -ne $this_thumbprint) {
-            try {
-                Set-RDCertificate -Role $role -ImportPath "$this_pfxpath" -Force -Verbose -ErrorAction Stop
-                Write-Output " > Success"
+		# dont reapply
+		if ($_.thumbprint -ne $this_thumbprint) {
+			try {
+				Set-RDCertificate -Role $role -ImportPath "$this_pfxpath" -Force -Verbose -ErrorAction Stop
+				Write-Output " > Success"
 				$successCount++
-            }
-            catch {
-                Write-Output " > Error: $error[0]"
-            }
-        }
-        else {
-            Write-Warning "Certificate is already applied"
-        }
-    }
+			}
+			catch {
+				Write-Output " > Error: $error[0]"
+			}
+		}
+		else {
+			Write-Warning "Certificate is already applied"
+		}
+	}
 
 	# Restart RDS
 	if ($successCount -gt 0) {
